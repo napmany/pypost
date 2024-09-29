@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=${DB_POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${DB_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${DB_POSTGRES_NAME}
+    volumes:
+      - pypost_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:${DB_POSTGRES_PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_POSTGRES_USERNAME} -d ${DB_POSTGRES_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./app
+    volumes:
+      - ./app:/app
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  db_test:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=test
+    ports:
+      - "5435:5432"
+
+volumes:
+  pypost_postgres_data:
